@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import numpy as np
 import requests
 from PIL import Image
+Image.MAX_IMAGE_PIXELS = None  # NASA 500 m tiles are 21600x21600 pixels.
 from rasterio.io import MemoryFile
 from rasterio.warp import reproject, Resampling
 from rasterio.transform import from_bounds
