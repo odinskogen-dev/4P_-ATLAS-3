@@ -82,6 +82,37 @@ def build_nasa(month):
     for im in images.values():im.close()
     return records
 
+def fetch_etopo_erddap():
+    """Fetch numeric ETOPO 2022 via NOAA ERDDAP, splitting the 0..360 longitude grid."""
+    from netCDF4 import Dataset
+    base='https://oceanwatch.pifsc.noaa.gov/erddap/griddap/ETOPO_2022_v1_60s.nc'
+    parts=[];urls=[]
+    for tag,west,east in [('west',345,359.99),('east',0,74.99)]:
+        url=f'{base}?z[(22):1:(66)][({west}):1:({east})]'
+        file=download(url,CACHE/f'etopo_erddap_{tag}.nc',min_bytes=150_000)
+        with Dataset(file) as nc:
+            lat=np.asarray(nc.variables['latitude'][:],dtype='float64')
+            lon=np.asarray(nc.variables['longitude'][:],dtype='float64')
+            z=np.ma.filled(nc.variables['z'][:],np.nan).astype('float32')
+            if z.shape!=(len(lat),len(lon)) or len(lat)<2000 or len(lon)<500:
+                raise ValueError('Unexpected/incomplete NOAA subset: '+str(z.shape))
+            if np.any(np.diff(lat)<0):z=z[::-1,:];lat=lat[::-1]
+            if np.any(np.diff(lon)<0):z=z[:,::-1];lon=lon[::-1]
+            if tag=='west':lon-=360
+            parts.append((lat,lon,z));urls.append(url)
+    latw,lonw,zw=parts[0];late,lone,ze=parts[1]
+    if len(latw)!=len(late) or not np.allclose(latw,late,atol=1e-5):
+        raise ValueError('NOAA latitude grids do not align')
+    lon=np.concatenate((lonw,lone))
+    if not np.all(np.diff(lon)>0):raise ValueError('NOAA longitudes unordered')
+    raw=np.concatenate((zw,ze),axis=1)
+    if np.count_nonzero(np.isfinite(raw))<0.99*raw.size:
+        raise ValueError('ETOPO missing values')
+    surface=np.asarray(Image.fromarray(raw[::-1,:],mode='F').resize((W,H),Image.Resampling.BILINEAR),dtype='float32')
+    if not (float(np.nanmin(surface))<-3000 and float(np.nanmax(surface))>1500):
+        raise ValueError('ETOPO range failed sanity check')
+    return surface,'; '.join(urls)
+
 def build_etopo():
     paths=[]
     # THREDDS WCS delivers original numeric elevations, not a coloured preview.
@@ -113,7 +144,10 @@ def build_etopo():
                 raise ValueError(f'implausible elevation range {low}..{high}')
             data=arr;provenance=url;break
         except Exception as e:print('ETOPO URL FAILED',idx,str(e),flush=True)
-    if data is None:raise RuntimeError('All NOAA numeric elevation subset endpoints failed')
+    if data is None:
+        try:data,provenance=fetch_etopo_erddap()
+        except Exception as e:print('ETOPO ERDDAP FAILED:',str(e),flush=True)
+    if data is None:raise RuntimeError('All NOAA numeric elevation subset endpoints failed, including ERDDAP')
     # 16-bit PNG is unsigned; exact integer-metre elevations recover via value-32768.
     encoded=(np.rint(data).astype('int32')+32768)
     if encoded.min()<0 or encoded.max()>65535:raise ValueError('Unrepresentable signed 16-bit elevations')
