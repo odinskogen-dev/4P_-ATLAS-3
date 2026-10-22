@@ -126,7 +126,11 @@ def build_etopo():
         q=dict(var=var,north='66',south='22',west='-15',east='75',horizStride='1',accept='netcdf4')
         paths.append(NCSS+'?'+urlencode(q))
     data=None;provenance=None
+    # Prefer NOAA ERDDAP geographic subsets; avoid downloading a global raster.
+    try:data,provenance=fetch_etopo_erddap()
+    except Exception as e:print('ETOPO ERDDAP PRIMARY FAILED:',str(e),flush=True)
     for idx,url in enumerate(paths):
+        if data is not None:break
         try:
             fname=CACHE/('etopo_subset_'+str(idx)+('.tif' if idx<2 else '.nc'))
             download(url,fname,min_bytes=100_000)
