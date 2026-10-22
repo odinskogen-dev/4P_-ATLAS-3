@@ -1,0 +1,32 @@
+name: CUB ROMA geographic source download
+on:
+  push:
+    branches: [cub-roma-world-assets-20261023]
+    paths:
+      - '.github/workflows/cub-roma-geodata.yml'
+      - 'tools/build_roma_geodata.py'
+      - 'assets/world/ne_10m_rivers_crop.geojson'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-world:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install image and elevation processors
+        run: python -m pip install --disable-pip-version-check pillow numpy requests rasterio netcdf4
+      - name: Download and process three sources
+        run: python tools/build_roma_geodata.py
+      - name: Upload actual map products and honest status
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ROMA_WORLD_GEO_ACTUAL_DATA
+          path: assets/world/
+          retention-days: 30
+          if-no-files-found: error
