@@ -133,6 +133,11 @@ def build_etopo():
 def main():
     # Copy exact Natural Earth 10m cropped feature dataset already committed on this branch.
     file=OUT/'ne_10m_rivers_crop.geojson'
+    if not file.exists():
+        try:
+            download('https://raw.githubusercontent.com/odinskogen-dev/4P_-ATLAS-3/cub-roma-world-assets-20261023/assets/world/ne_10m_rivers_crop.geojson',file,min_bytes=100000)
+        except Exception as e:
+            print('NATURAL EARTH DOWNLOAD FAILED:',str(e),flush=True)
     try:
         j=json.loads(file.read_text());assert j['type']=='FeatureCollection' and len(j['features'])>200
         STATUS['natural_earth_10m_rivers']={'status':'ok','features':len(j['features']),'path':str(file.relative_to(OUT))}
