@@ -1,0 +1,3 @@
+Kenney original license: https://kenney.nl
+Derived GLB redistribution: https://github.com/Hidencod/tge-assets/blob/main/LICENSE
+Creative Commons Zero 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/
