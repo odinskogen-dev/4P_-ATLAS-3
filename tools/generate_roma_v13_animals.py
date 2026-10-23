@@ -76,6 +76,16 @@ def fps_stats(name,arm,elephant,howdah=False):
     bpy.ops.object.modifier_apply(modifier=dec.name)
   tris=sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in objects)
   print('BUDGET_DECIMATE',name,tris,flush=True)
+  if tris>expected[1]:
+   for ob in objects:
+    if len(ob.data.polygons)>45:
+     bpy.context.view_layer.objects.active=ob
+     dec=ob.modifiers.new('CUB_BUDGET_FINAL','DECIMATE')
+     dec.ratio=(expected[1]-220)/tris
+     dec.use_collapse_triangulate=True
+     bpy.ops.object.modifier_apply(modifier=dec.name)
+   tris=sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in objects)
+   print('BUDGET_FINAL',name,tris,flush=True)
  if not expected[0]<=tris<=expected[1]:raise RuntimeError(f'{name}: triangle budget failure {tris} (target {expected})')
  outfile=BASE/(name+'.glb')
  bpy.ops.export_scene.gltf(filepath=str(outfile),export_format='GLB',
