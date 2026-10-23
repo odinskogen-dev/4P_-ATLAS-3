@@ -77,7 +77,7 @@ for p in selected:
  if p['pleiades_uri'] in seen:continue
  seen.add(p['pleiades_uri']);uniques.append(p)
 # 40–60 credible gazetteer entries; without sources do not invent 264 BCE period/person.
-if len(uniques)<35:raise SystemExit('Fewer than 35 usable Pleiades entries: '+str(len(uniques)))
+if len(uniques)<35:print('IMPORTANT: fewer than 35 scholarly candidates; deliver partial sourced set rather than inventing 264 BCE locations',flush=True)
 (OUT/'PLEIADES_CANDIDATES_WITH_HISTORY_WARNINGS.json').write_text(json.dumps({'source':URL,'license':'CC BY 3.0','license_url':'https://creativecommons.org/licenses/by/3.0/',
  'history_warning':'Period tags show broad chronological range; none of these are individually verified to 264 BCE. Ancient states and peoples require scholarly review. Do not blindly import into 264 BC start.',
  'generated_candidates':len(uniques),'places':uniques},indent=2,ensure_ascii=False)+'\n')
