@@ -1,0 +1,29 @@
+name: CUB ROMA Wider Campaign World Real 2026
+on:
+  push:
+    branches: [cub-roma-expanded-map-20261023]
+    paths:
+      - 'tools/build_roma_extended_world.py'
+      - '.github/workflows/cub-roma-extended-world.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install data libraries
+        run: python -m pip install numpy pillow rasterio netCDF4 pyshp shapely requests
+      - name: Build authentic wide NOAA NASA Natural Earth world
+        run: python tools/build_roma_extended_world.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_EXPANDED_-20_90_5_66_REAL_GEOGRAPHY
+          path: assets/roma_expanded_world_20261023/
+          if-no-files-found: error
+          retention-days: 30
