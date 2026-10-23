@@ -7,8 +7,8 @@ from pathlib import Path
 BASE=Path(__file__).resolve().parents[1]
 OUT=BASE/'assets/roma_real_ubc_optimized'
 OUT.mkdir(parents=True,exist_ok=True)
-SRC_URL='https://raw.githubusercontent.com/ilrein/warptracker/main/art/hero-ubc-wip.glb'
-src=OUT/'UBC_CC0_Original_65bone_13792tris.glb'
+SRC_URL='https://raw.githubusercontent.com/programasweights/avatar/main/public/assets/character.glb'
+src=OUT/'UBC_CC0_Original_Fullbody.glb'
 def dl(url):
  with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'CUB-ROMA-open-CC0-source/2026'}),timeout=180) as r: return r.read(65_000_000)
 src.write_bytes(dl(SRC_URL))
@@ -71,7 +71,7 @@ for goal in [2500,700]:
  path=Path(opts['filepath'])
  if path.read_bytes()[:4]!=b'glTF':raise ValueError('Bad output GLB')
  rec={'file':path.name,'target':goal,'blender_triangles':actual,'before':before,'after':after,'source':SRC_URL,'license':'CC0-1.0',
-      'license_evidence':'https://github.com/ilrein/warptracker/blob/main/ASSETS.md',
+      'license_evidence':'https://github.com/programasweights/avatar/blob/main/ASSETS.md',
       'blender_version':bpy.app.version_string,'bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
  records.append(rec)
  print('SUCCESS',goal,'actual',actual,'bones',after['bones'],'actions',after['animation_actions'],'size',path.stat().st_size,flush=True)
