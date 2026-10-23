@@ -1,0 +1,25 @@
+name: CUB ROMA Acquire Official CC0 UAL 1 2 and UBC
+on:
+  push:
+    branches: [cub-roma-ual-ubc-real-20261023]
+    paths:
+      - 'tools/roma_ual_acquire.py'
+      - '.github/workflows/roma-ual-acquire.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python tools/roma_ual_acquire.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_OFFICIAL_UAL_STANDARDS_AND_UBC_ORIGINAL
+          path: assets/roma_ual_ubc/
+          if-no-files-found: error
+          retention-days: 30
