@@ -1,0 +1,29 @@
+name: CUB ROMA Real CC0 Nature and Elephant
+on:
+  push:
+    branches: [cub-roma-world-assets-20261023]
+    paths:
+      - 'tools/build_roma_fauna_cc0.py'
+      - '.github/workflows/cub-roma-fauna-cc0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Blender for CC0 elephant export
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq blender
+      - name: Download actual licensed model binaries
+        run: python tools/build_roma_fauna_cc0.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_CC0_NATURE_AND_RIGGED_ELEPHANT_20261023
+          path: assets/roma_fauna_cc0_20261023/
+          if-no-files-found: error
+          retention-days: 30
