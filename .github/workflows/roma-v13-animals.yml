@@ -1,0 +1,31 @@
+name: ROMA v13 actual animated elephant camel models
+on:
+  push:
+    branches: [cub-roma-v13-models-20261023]
+    paths:
+      - 'tools/generate_roma_v13_animals.py'
+      - '.github/workflows/roma-v13-animals.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq blender python3-numpy
+      - name: Generate meshes skins rigs animations and verify budgets
+        shell: bash
+        run: |
+          set -o pipefail
+          blender --background --python tools/generate_roma_v13_animals.py 2>&1 | tee /tmp/cub-roma-v13-model.log
+          grep -q 'ANIMALS_COMPLETE 3' /tmp/cub-roma-v13-model.log
+          ! grep -q 'ANIMAL_FAILED' /tmp/cub-roma-v13-model.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_V13_RIGGED_ANIMATED_ELEPHANT_CAMEL
+          path: assets/roma_v13_animals/
+          if-no-files-found: error
+          retention-days: 30
