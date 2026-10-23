@@ -65,9 +65,18 @@ def fps_stats(name,arm,elephant,howdah=False):
  quality='STAGING' if elephant or True else 'STAGING'
  print('QA',name,'tris',tris,'bones',bones,'clips',clips,flush=True)
  expected=(3000,5000) if elephant else (1500,2500)
- if not expected[0]<=tris<=expected[1]:
-  # scale detail via remesh modifiers per mesh preserving material and bone-assigned weights. Minimum tri under budget requires more subdivision.
-  raise RuntimeError(f'{name}: triangle budget failure {tris} (target {expected})')
+ if tris>expected[1]:
+  ratio=(expected[1]-180)/tris
+  for ob in objects:
+   if len(ob.data.polygons)>90:
+    bpy.context.view_layer.objects.active=ob
+    dec=ob.modifiers.new('CUB_MESH_TRIANGLE_BUDGET','DECIMATE')
+    dec.ratio=max(.30,min(.99,ratio))
+    dec.use_collapse_triangulate=True
+    bpy.ops.object.modifier_apply(modifier=dec.name)
+  tris=sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in objects)
+  print('BUDGET_DECIMATE',name,tris,flush=True)
+ if not expected[0]<=tris<=expected[1]:raise RuntimeError(f'{name}: triangle budget failure {tris} (target {expected})')
  outfile=BASE/(name+'.glb')
  bpy.ops.export_scene.gltf(filepath=str(outfile),export_format='GLB',
   export_yup=True,export_skins=True,export_animations=True,export_nla_strips=True,
