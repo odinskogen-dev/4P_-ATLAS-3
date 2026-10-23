@@ -108,7 +108,7 @@ def fetch_etopo_erddap():
     raw=np.concatenate((zw,ze),axis=1)
     if np.count_nonzero(np.isfinite(raw))<0.99*raw.size:
         raise ValueError('ETOPO missing values')
-    surface=np.asarray(Image.fromarray(raw[::-1,:],mode='F').resize((W,H),Image.Resampling.BILINEAR),dtype='float32')
+    surface=np.asarray(Image.fromarray(np.ascontiguousarray(raw[::-1,:],dtype=np.float32)).resize((W,H),Image.Resampling.BILINEAR),dtype='float32')
     if not (float(np.nanmin(surface))<-3000 and float(np.nanmax(surface))>1500):
         raise ValueError('ETOPO range failed sanity check')
     return surface,'; '.join(urls)
@@ -155,7 +155,7 @@ def build_etopo():
     # 16-bit PNG is unsigned; exact integer-metre elevations recover via value-32768.
     encoded=(np.rint(data).astype('int32')+32768)
     if encoded.min()<0 or encoded.max()>65535:raise ValueError('Unrepresentable signed 16-bit elevations')
-    img=Image.fromarray(encoded.astype('uint16'),mode='I;16')
+    img=Image.fromarray(np.ascontiguousarray(encoded,dtype=np.uint16))
     dst=OUT/'etopo2022_surface_60s_crop_16bit.png';img.save(dst)
     with Image.open(dst) as chk:
         if chk.size!=(W,H) or np.asarray(chk).dtype.itemsize!=2: raise RuntimeError('16-bit output QA failed')
