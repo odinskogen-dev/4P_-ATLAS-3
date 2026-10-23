@@ -1,0 +1,29 @@
+name: CUB ROMA Real SRTM 30m battle DEM
+on:
+  push:
+    branches: [cub-roma-world-assets-20261023]
+    paths:
+      - 'tools/build_roma_srtm_sites.py'
+      - '.github/workflows/cub-roma-battle-dem.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deterministic geodata tools
+        run: python -m pip install numpy Pillow rasterio
+      - name: Download and crop original NASA SRTMGL1 files
+        run: python tools/build_roma_srtm_sites.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_REAL_SRTM30_BATTLES_20261023
+          path: assets/battle_dem_srtm30/
+          if-no-files-found: error
+          retention-days: 30
