@@ -1,0 +1,27 @@
+name: CUB ROMA Real Rigged Soldier Candidate QA
+on:
+  push:
+    branches: [cub-roma-world-assets-20261023]
+    paths:
+      - 'tools/acquire_roma_soldier_candidates.py'
+      - '.github/workflows/cub-roma-soldier-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Acquire and benchmark five real CC0 rigged alternatives
+        run: python tools/acquire_roma_soldier_candidates.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_REAL_CC0_SOLDIER_ALTERNATIVES_20261023
+          path: assets/roma_alt_soldiers_cc0/
+          if-no-files-found: error
+          retention-days: 30
