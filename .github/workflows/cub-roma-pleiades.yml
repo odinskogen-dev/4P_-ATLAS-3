@@ -1,0 +1,27 @@
+name: CUB ROMA Pleiades Attested Places Source Audit
+on:
+  push:
+    branches: [cub-roma-expanded-map-20261023]
+    paths:
+      - 'tools/roma_pleiades_expansion.py'
+      - '.github/workflows/cub-roma-pleiades.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download source Pleiades gazetteer and extract evidenced geographic candidates
+        run: python tools/roma_pleiades_expansion.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_WIDER_WORLD_PLEIADES_SOURCE_VERIFIED_CANDIDATES
+          path: assets/roma_pleiades_candidates_20261023/
+          if-no-files-found: error
+          retention-days: 30
