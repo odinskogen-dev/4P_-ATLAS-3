@@ -1,0 +1,25 @@
+name: ROMA v13 physical CC0 historical sound sources
+on:
+  push:
+    branches: [cub-roma-v13-models-20261023]
+    paths:
+      - 'tools/acquire_roma_v13_cc0_sounds.py'
+      - '.github/workflows/roma-v13-cc0-sounds.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python tools/acquire_roma_v13_cc0_sounds.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_V13_REAL_CC0_CAMEL_WATER_FIRE_HORNS_BATTLE_SOUNDS
+          path: assets/roma_v13_real_cc0_sound/
+          if-no-files-found: error
+          retention-days: 30
