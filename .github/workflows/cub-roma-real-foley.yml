@@ -1,0 +1,29 @@
+name: CUB ROMA Verified Recorded CC0 Foley
+on:
+  push:
+    branches: [cub-roma-world-assets-20261023]
+    paths:
+      - 'tools/build_roma_recorded_foley.py'
+      - '.github/workflows/cub-roma-real-foley.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify FFmpeg available
+        run: ffmpeg -version | head -n 1
+      - name: Fetch CC0 field Foley and package lossless source plus OGG and MP3
+        run: python tools/build_roma_recorded_foley.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_REAL_RECORDED_CC0_SOUNDS_20261023
+          path: assets/roma_recorded_cc0_20261023/
+          if-no-files-found: error
+          retention-days: 30
