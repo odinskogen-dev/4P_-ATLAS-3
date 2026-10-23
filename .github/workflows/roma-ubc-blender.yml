@@ -15,9 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install real Blender for weighted 3D decimation
-        run: sudo apt-get update -qq && sudo apt-get install -y blender
+        run: sudo apt-get update -qq && sudo apt-get install -y blender python3-numpy
       - name: Run Blender on actual CC0 UBC male, retain rig and animation
-        run: blender --background --python tools/roma_decimate_ubc_blender.py
+        run: |
+          set -o pipefail
+          blender --background --python tools/roma_decimate_ubc_blender.py 2>&1 | tee /tmp/roma-blender-qa.log
+          grep -q 'SUCCESS 2500' /tmp/roma-blender-qa.log
+          grep -q 'SUCCESS 700' /tmp/roma-blender-qa.log
+          ! grep -q 'Traceback' /tmp/roma-blender-qa.log
       - uses: actions/upload-artifact@v4
         with:
           name: ROMA_REAL_BLENDER_DECIMATED_UBC_2500_700
