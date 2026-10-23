@@ -14,8 +14,8 @@ CACHE=ROOT/'.srtm_cache';CACHE.mkdir(exist_ok=True)
 BASE='https://step.esa.int/auxdata/dem/SRTMGL1/'
 SITES={
 'Cannae':(41.310,16.130,'Battle 216 BCE; approximate'),
-'Trebia':(45.061,9.683,'Battle 218 BCE; approximate'),
-'Lake_Trasimene':(43.119,12.098,'Battle 217 BCE; approximate'),
+'Trebia':(44.988472,9.567361,'Battle 218 BCE; approximately west bank of lower Trebia, location uncertain'),
+'Lake_Trasimene':(43.19750,12.08500,'Battle 217 BCE; approximate north shore, not lake centre'),
 'Zama':(36.340,9.690,'Battle 202 BCE; site disputed, example location only'),
 'Cynoscephalae':(39.330,22.740,'Battle 197 BCE; approximate'),
 'Pydna':(40.370,22.620,'Battle 168 BCE; approximate'),
