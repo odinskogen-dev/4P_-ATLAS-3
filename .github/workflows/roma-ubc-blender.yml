@@ -1,0 +1,26 @@
+name: CUB ROMA Actual Blender UBC Rigged 2500 700 LOD
+on:
+  push:
+    branches: [cub-roma-ual-ubc-real-20261023]
+    paths:
+      - 'tools/roma_decimate_ubc_blender.py'
+      - '.github/workflows/roma-ubc-blender.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install real Blender for weighted 3D decimation
+        run: sudo apt-get update -qq && sudo apt-get install -y blender
+      - name: Run Blender on actual CC0 UBC male, retain rig and animation
+        run: blender --background --python tools/roma_decimate_ubc_blender.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_REAL_BLENDER_DECIMATED_UBC_2500_700
+          path: assets/roma_real_ubc_optimized/
+          if-no-files-found: error
+          retention-days: 30
