@@ -31,7 +31,14 @@ for goal in [2500,700]:
  for o in meshes:
   if o.data.shape_keys:
    o.shape_key_clear()
-  if not o.vertex_groups:raise ValueError('Source part unweighted '+o.name)
+  if not o.vertex_groups:
+   # Separate eyeball meshes in the source may be unweighted; bind explicitly to the head.
+   arm=next(a for a in bpy.data.objects if a.type=='ARMATURE')
+   grp=o.vertex_groups.new(name='Head')
+   grp.add(list(range(len(o.data.vertices))),1.0,'REPLACE')
+   if not any(x.type=='ARMATURE' for x in o.modifiers):
+    mod=o.modifiers.new('CUB_HEAD_RIG','ARMATURE');mod.object=arm
+   print('RIGGED UNWEIGHTED PART',o.name,'verts',len(o.data.vertices),flush=True)
  total=triangles()
  ratio=goal/max(total,1)
  # Weight reduction by same ratio across meshes: preserve original face/body triangle proportions.
