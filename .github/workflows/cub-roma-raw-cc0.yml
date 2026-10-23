@@ -1,0 +1,26 @@
+name: CUB ROMA Quick CC0 Original Archives
+on:
+  push:
+    branches: [cub-roma-world-assets-20261023]
+    paths:
+      - 'tools/download_roma_cc0_archives.py'
+      - '.github/workflows/cub-roma-raw-cc0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python tools/download_roma_cc0_archives.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_REAL_CC0_RAW_AUDIO_AND_ELEPHANT_20261023
+          path: assets/roma_raw_cc0_sources/
+          if-no-files-found: error
+          retention-days: 30
