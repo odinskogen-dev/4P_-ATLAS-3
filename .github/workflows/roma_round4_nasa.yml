@@ -62,4 +62,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create roma-geo-round4 out/SOURCE_MANIFEST.json --repo "$GITHUB_REPOSITORY" --title "ROMA NASA Round4 Source Archive" --notes "D1 contains East China, B2 and C2 are Southern Hemisphere. Check SOURCE_MANIFEST for exact verification and CC0 licences." --prerelease --target "$GITHUB_SHA" || true
+          gh release upload roma-geo-round4 out/SOURCE_MANIFEST.json --repo "$GITHUB_REPOSITORY" --clobber
           for f in out/*; do case "$f" in *SOURCE_MANIFEST.json) continue;; esac; gh release upload roma-geo-round4 "$f" --repo "$GITHUB_REPOSITORY" --clobber; done
