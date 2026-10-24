@@ -1,0 +1,58 @@
+name: CUB ROMA publish NASA Blue Marble originals release
+on:
+  push:
+    branches: [cub-roma-world-assets-20261023]
+    paths:
+      - '.github/workflows/cub-roma-publish-nasa-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Recover previously verified NASA original B1
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 40082027516
+          github-token: ${{ github.token }}
+          name: ROMA_NASA_JULY_500M_ORIGINAL_B1
+          path: originals/
+      - name: Recover previously verified NASA original C1
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 40082027516
+          github-token: ${{ github.token }}
+          name: ROMA_NASA_JULY_500M_ORIGINAL_C1
+          path: originals/
+      - name: Check original binaries and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s originals/world.200407.3x21600x21600.B1.jpg
+          test -s originals/world.200407.3x21600x21600.C1.jpg
+          test -s originals/NASA_ORIGINALS_MANIFEST.json
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          meta=json.loads(Path("originals/NASA_ORIGINALS_MANIFEST.json").read_text())
+          for tile in ("B1","C1"):
+              row=meta["files"][tile]
+              assert row["status"]=="verified" and row["width"]==21600 and row["height"]==21600
+              p=Path("originals")/row["filename"]
+              assert p.stat().st_size==row["bytes"],(tile,"size")
+              assert hashlib.file_digest(p.open("rb"),"sha256").hexdigest()==row["sha256"],(tile,"hash")
+              print("VERIFIED",tile,p.stat().st_size,row["sha256"])
+          PY
+      - name: Publish publicly downloadable GitHub Release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="roma-geo-v1"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "ROMA GEO v1 - NASA Blue Marble July 500 m originals" --notes "NASA Blue Marble Next Generation July 2004 (500 m). Two unmodified 21600x21600 JPEG sources B1 and C1. Source: NASA Earth Observatory / NASA science. These imagery assets are redistributed for geographic research and CUB ROMA development, not a NASA-endorsed game. NASA media use guidelines apply: https://www.nasa.gov/nasa-brand-center/images-and-media/ . Manifest provides original URLs, sizes and SHA256 checksums." --prerelease
+          fi
+          gh release upload "$TAG" originals/world.200407.3x21600x21600.B1.jpg originals/world.200407.3x21600x21600.C1.jpg originals/NASA_ORIGINALS_MANIFEST.json --repo "$GITHUB_REPOSITORY" --clobber
