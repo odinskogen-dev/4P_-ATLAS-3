@@ -18,7 +18,7 @@ jobs:
           from PIL import Image
           Image.MAX_IMAGE_PIXELS=None
           base="https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-base/july/"
-          urls=[("world.200407.3x21600x21600.B2.jpg",base+"world.200407.3x21600x21600.B2.jpg","NASA"),("world.200407.3x21600x21600.C2.jpg",base+"world.200407.3x21600x21600.C2.jpg","NASA"),("world.200407.3x21600x21600.D1.jpg",base+"world.200407.3x21600x21600.D1.jpg","NASA"),("OGA_StarNinjas_sword_attack_CC0.zip","https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip","CC0"),("OGA_transitking_waves_CC0.flac","https://opengameart.org/sites/default/files/wave_01_cc0-11505__transitking__wavesound.flac","CC0"),("OGA_StarNinjas_sword_clash_CC0.zip","https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip","CC0"),("OGA_war_horns_CC0.wav","https://opengameart.org/sites/default/files/war_horns.wav","CC0"),("OGA_Seagull_Ambient1_CC0.wav","https://opengameart.org/sites/default/files/Seagull%20Ambient%201.wav","CC0"),("OGA_birds_ambient_CC0.ogg","https://opengameart.org/sites/default/files/birds-isaiah658_0.ogg","CC0"),("OGA_footstep_01_CC0.ogg","https://opengameart.org/sites/default/files/01-footstep_0.ogg","CC0"]
+          urls=[("world.200407.3x21600x21600.B2.jpg",base+"world.200407.3x21600x21600.B2.jpg","NASA"),("world.200407.3x21600x21600.C2.jpg",base+"world.200407.3x21600x21600.C2.jpg","NASA"),("world.200407.3x21600x21600.D1.jpg",base+"world.200407.3x21600x21600.D1.jpg","NASA"),("OGA_StarNinjas_sword_attack_CC0.zip","https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip","CC0"),("OGA_transitking_waves_CC0.flac","https://opengameart.org/sites/default/files/wave_01_cc0-11505__transitking__wavesound.flac","CC0"),("OGA_StarNinjas_sword_clash_CC0.zip","https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip","CC0"),("OGA_war_horns_CC0.wav","https://opengameart.org/sites/default/files/war_horns.wav","CC0"),("OGA_Seagull_Ambient1_CC0.wav","https://opengameart.org/sites/default/files/Seagull%20Ambient%201.wav","CC0"),("OGA_birds_ambient_CC0.ogg","https://opengameart.org/sites/default/files/birds-isaiah658_0.ogg","CC0"),("OGA_footstep_01_CC0.ogg","https://opengameart.org/sites/default/files/01-footstep_0.ogg","CC0")]
           records=[]
           for name,url,lic in urls:
             r={"name":name,"url":url,"license":lic,"status":"failed"}
@@ -52,6 +52,11 @@ jobs:
           with open("out/SOURCE_MANIFEST.json","w") as f:json.dump(records,f,indent=2)
           PY
           python3 fetch.py
+      - name: Create single ZIP of source originals
+        run: |
+          cd out
+          zip -0 -q ROMA_R4_NASA_CC0_ORIGINALS.zip SOURCE_MANIFEST.json world.*.jpg OGA_*
+          unzip -tq ROMA_R4_NASA_CC0_ORIGINALS.zip
       - name: Create isolated prerelease with validated originals
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
