@@ -1,0 +1,60 @@
+name: ROMA NASA Round4 originals
+on:
+  push:
+    branches: [cub-roma-nasa-east-round4-20261025]
+permissions:
+  contents: write
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Download original NASA tiles and CC0 sounds
+        run: |
+          python3 -m pip install --quiet pillow
+          mkdir -p out
+          cat > fetch.py <<'PY'
+          import urllib.request,hashlib,json,os,time,zipfile
+          from PIL import Image
+          Image.MAX_IMAGE_PIXELS=None
+          base="https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-base/july/"
+          urls=[("world.200407.3x21600x21600.B2.jpg",base+"world.200407.3x21600x21600.B2.jpg","NASA"),("world.200407.3x21600x21600.C2.jpg",base+"world.200407.3x21600x21600.C2.jpg","NASA"),("world.200407.3x21600x21600.D1.jpg",base+"world.200407.3x21600x21600.D1.jpg","NASA"),("OGA_StarNinjas_sword_attack_CC0.zip","https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip","CC0"),("OGA_transitking_waves_CC0.flac","https://opengameart.org/sites/default/files/wave_01_cc0-11505__transitking__wavesound.flac","CC0")]
+          records=[]
+          for name,url,lic in urls:
+            r={"name":name,"url":url,"license":lic,"status":"failed"}
+            for attempt in range(3):
+              try:
+                req=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0"})
+                with urllib.request.urlopen(req,timeout=120) as response, open("out/"+name,"wb") as f:
+                  while True:
+                    b=response.read(1048576)
+                    if not b:break
+                    f.write(b)
+                n=os.path.getsize("out/"+name)
+                if n<1000:raise Exception("too short")
+                if name.endswith(".jpg"):
+                  with Image.open("out/"+name) as img:
+                    if img.size!=(21600,21600):raise Exception("invalid dimension "+str(img.size))
+                    img.verify()
+                if name.endswith(".zip"):
+                  with zipfile.ZipFile("out/"+name) as z:
+                    if z.testzip():raise Exception("bad zip")
+                with open("out/"+name,"rb") as f:h=hashlib.file_digest(f,"sha256").hexdigest()
+                r.update(status="verified",bytes=n,sha256=h)
+                break
+              except Exception as e:
+                r["error"]=str(e)
+                try:os.remove("out/"+name)
+                except FileNotFoundError:pass
+                time.sleep(2)
+            records.append(r)
+            print(r,flush=True)
+          with open("out/SOURCE_MANIFEST.json","w") as f:json.dump(records,f,indent=2)
+          PY
+          python3 fetch.py
+      - name: Create isolated prerelease with validated originals
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create roma-geo-round4 out/SOURCE_MANIFEST.json --repo "$GITHUB_REPOSITORY" --title "ROMA NASA Round4 Source Archive" --notes "D1 contains East China, B2 and C2 are Southern Hemisphere. Check SOURCE_MANIFEST for exact verification and CC0 licences." --prerelease --target "$GITHUB_SHA" || true
+          for f in out/*; do case "$f" in *SOURCE_MANIFEST.json) continue;; esac; gh release upload roma-geo-round4 "$f" --repo "$GITHUB_REPOSITORY" --clobber; done
