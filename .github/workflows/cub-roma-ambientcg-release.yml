@@ -1,0 +1,76 @@
+name: CUB ROMA publish ambientCG CC0 1K JPG textures
+on:
+  push:
+    branches: [cub-roma-world-assets-20261023]
+    paths:
+      - '.github/workflows/cub-roma-ambientcg-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-materials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Download original 1K JPG material ZIPs and verify integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,time,urllib.request,zipfile
+          from pathlib import Path
+          materials={
+              "RoofingTiles012A":"roofing clay tiles",
+              "Plaster007":"plaster wall",
+              "Bricks097":"aged brick",
+              "PavingStones046":"cobblestone paving",
+              "Grass004":"grass",
+              "Ground071":"earth and soil",
+              "Rock058":"rock and stone",
+              "Ground093C":"sand and desert",
+          }
+          root=Path("ambientcg_originals")
+          root.mkdir(exist_ok=True)
+          manifest={"source":"ambientCG","license":"CC0-1.0","license_url":"https://docs.ambientcg.com/license/","file_variant":"1K-JPG","materials":{}}
+          failures=[]
+          for asset,role in materials.items():
+              name=f"{asset}_1K-JPG.zip"
+              url=f"https://ambientcg.com/get?file={name}"
+              dest=root/name
+              ok=False
+              for attempt in range(3):
+                  try:
+                      req=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0 (compatible; CUB-ROMA-asset-retriever/1.0)","Accept":"application/zip,application/octet-stream,*/*"})
+                      with urllib.request.urlopen(req,timeout=110) as response,dest.open("wb") as output:
+                          for chunk in iter(lambda:response.read(1024*1024),b""):
+                              output.write(chunk)
+                      if dest.stat().st_size<100000:raise ValueError("Suspiciously small source ZIP")
+                      with zipfile.ZipFile(dest) as z:
+                          bad=z.testzip()
+                          if bad is not None:raise ValueError("Bad ZIP member "+bad)
+                          members=[n for n in z.namelist() if n.lower().endswith(".jpg")]
+                          if not members:raise ValueError("No JPG source textures present")
+                      with dest.open("rb") as stream:digest=hashlib.file_digest(stream,"sha256").hexdigest()
+                      manifest["materials"][asset]={"status":"verified","usage":role,"filename":name,"size_bytes":dest.stat().st_size,"sha256":digest,"jpg_members":members,"source_url":url,"landing_page":f"https://ambientcg.com/view?id={asset}"}
+                      print("VERIFIED",asset,dest.stat().st_size,flush=True)
+                      ok=True
+                      break
+                  except Exception as e:
+                      print("DOWNLOAD/QA FAILED",asset,"attempt",attempt+1,str(e),flush=True)
+                      dest.unlink(missing_ok=True)
+                      time.sleep(3*(attempt+1))
+              if not ok:
+                  failures.append(asset)
+                  manifest["materials"][asset]={"status":"failed","source_url":url,"landing_page":f"https://ambientcg.com/view?id={asset}"}
+          (root/"AMBIENTCG_1K_JPG_MANIFEST.json").write_text(json.dumps(manifest,indent=2)+"\n")
+          print("FAILED MATERIALS",failures,flush=True)
+          if failures:raise SystemExit("Some material downloads failed: "+", ".join(failures))
+          PY
+      - name: Upload eight material ZIP files to public NASA/ROMA release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload roma-geo-v1 ambientcg_originals/* --repo "$GITHUB_REPOSITORY" --clobber
+          gh release view roma-geo-v1 --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'
