@@ -1,0 +1,29 @@
+name: CUB ROMA R6 exact Node dependencies isolated
+on:
+  push:
+    branches: [cub-roma-r6-npm-deps-20261025]
+permissions: {contents: read}
+jobs:
+  bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install ROMA iter50 dependencies from npm registry
+        run: |
+          mkdir /tmp/roma_deps; cd /tmp/roma_deps
+          cat > package.json <<'EOF'
+          {"name":"roma-r6-deps-transfer","private":true,"type":"module","dependencies":{"@fontsource/cinzel":"^5.3.0","three":"^0.170.0"},"devDependencies":{"d3-delaunay":"^6.0.4","meshoptimizer":"^0.21.0","playwright-core":"1.55","polygon-clipping":"^0.15.7","topojson-client":"^3.1.0","vite":"^6.4.4","vite-plugin-singlefile":"^2.3.3","world-atlas":"^2.0.2"}}
+          EOF
+          npm install --no-audit --no-fund
+          ./node_modules/.bin/vite --version
+          tar -czf /tmp/roma_node_modules_linux_x64.tar.gz node_modules package-lock.json
+          sha256sum /tmp/roma_node_modules_linux_x64.tar.gz >/tmp/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_R6_NPM_NODE_MODULES_VITE_linux_x64
+          path: |
+            /tmp/roma_node_modules_linux_x64.tar.gz
+            /tmp/SHA256.txt
+          retention-days: 14
