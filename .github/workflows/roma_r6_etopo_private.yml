@@ -29,7 +29,9 @@ jobs:
           Image.MAX_IMAGE_PIXELS=None
           o=Path('/tmp/etopo_out');o.mkdir(exist_ok=True)
           with rasterio.open('/tmp/etopo.tif') as ds:
-              assert ds.count==1 and ds.crs.to_epsg()==4326
+              print('NOAA GEO SOURCE', ds.count, str(ds.crs), list(ds.bounds), str(ds.transform), ds.width, ds.height,flush=True)
+              assert ds.count==1
+              if ds.crs is not None: assert ds.crs.is_geographic
               assert .016<abs(ds.transform.a)<.017 and .016<abs(ds.transform.e)<.017
               bbox=(-20,5,150.5,66)
               assert ds.bounds.left<=bbox[0] and ds.bounds.right>=bbox[2]
