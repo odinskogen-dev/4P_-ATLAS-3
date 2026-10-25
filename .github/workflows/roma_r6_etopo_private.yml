@@ -1,0 +1,54 @@
+name: ROMA R6 NOAA ETOPO 2022 ORIGINAL 60sec
+on:
+  push:
+    branches:
+      - cub-roma-r6-etopo-height-private-20261025
+permissions:
+  contents: read
+jobs:
+  etopo-verified:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Fetch NOAA original ETOPO2022 real elevations
+        run: |
+          curl -fL --retry 3 --retry-delay 5 --connect-timeout 45 --max-time 2100 -o /tmp/etopo.tif 'https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2022/data/60s/60s_surface_elev_gtif/ETOPO_2022_v1_60s_N90W180_surface.tif'
+          test "$(stat -c %s /tmp/etopo.tif)" -gt 10000000
+          sha256sum /tmp/etopo.tif >/tmp/source_sha256.txt
+      - run: python -m pip install --disable-pip-version-check rasterio pillow numpy
+      - name: Verified EPSG4326 signed NOAA height crop
+        run: |
+          cat >/tmp/crop.py <<'PY'
+          import rasterio,numpy as np,hashlib,json
+          from rasterio.windows import from_bounds
+          from rasterio.enums import Resampling
+          from pathlib import Path
+          from PIL import Image
+          Image.MAX_IMAGE_PIXELS=None
+          o=Path('/tmp/etopo_out');o.mkdir(exist_ok=True)
+          with rasterio.open('/tmp/etopo.tif') as ds:
+              assert ds.count==1 and ds.crs.to_epsg()==4326
+              assert .016<abs(ds.transform.a)<.017 and .016<abs(ds.transform.e)<.017
+              bbox=(-20,5,150.5,66)
+              assert ds.bounds.left<=bbox[0] and ds.bounds.right>=bbox[2]
+              w=from_bounds(*bbox,transform=ds.transform).round_offsets().round_lengths()
+              ar=ds.read(1,window=w)
+              assert np.isfinite(ar).all() and ar.min()>-32768 and ar.max()<32767
+              if ds.nodata is not None:assert not (ar==ds.nodata).any()
+              enc=(ar.astype(np.int32)+32768).astype(np.uint16)
+              Image.fromarray(enc).save(o/'etopo_surface_full_16bit.png')
+              target_w=2048;target_h=round(ar.shape[0]*target_w/ar.shape[1])
+              res=ds.read(1,window=w,out_shape=(target_h,target_w),resampling=Resampling.bilinear)
+              Image.fromarray(np.clip(np.rint(res).astype(np.int32)+32768,0,65535).astype(np.uint16)).save(o/'etopo_surface_2048_16bit.png')
+              meta={'source':'NOAA ETOPO2022 60s surface GeoTIFF, 1 arcminute','url':'https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2022/data/60s/60s_surface_elev_gtif/ETOPO_2022_v1_60s_N90W180_surface.tif','source_sha256':hashlib.sha256(Path('/tmp/etopo.tif').read_bytes()).hexdigest(),'requested_bounds_lonlat':bbox,'source_bounds':[ds.bounds.left,ds.bounds.bottom,ds.bounds.right,ds.bounds.top],'source_crs':str(ds.crs),'native_shape':list(ar.shape),'downsampled_shape':[target_h,target_w],'encoding':'pixel uint16 = metres above datum +32768; not modern political or historical surface reconstruction','files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in o.glob('*.png')}}
+          (o/'VERIFIED_ET0P0_PROVENANCE.json').write_text(json.dumps(meta,indent=2))
+          print(meta)
+          PY
+          python /tmp/crop.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROMA_R6_VERIFIED_NOAA_ETOPO_16BIT
+          path: /tmp/etopo_out/
+          retention-days: 30
